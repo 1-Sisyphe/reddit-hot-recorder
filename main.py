@@ -1,5 +1,4 @@
 import praw
-import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
 import urllib.request
@@ -8,10 +7,10 @@ import matplotlib.image as mpimg
 from datetime import datetime
 from time import sleep
 
-cred = pd.read_csv('reddit_credentials', header=None)
-client_id = cred.loc[0][0]
-client_secret = cred.loc[1][0]
-user_agent = cred.loc[2][0]
+with open('reddit_credentials') as f:
+    client_id = f.readline().strip('\n')
+    client_secret = f.readline().strip('\n')
+    user_agent = f.readline().strip('\n')
 
 def get_data(sub='france', maxposts=10):
     limit_read = maxposts + 5
