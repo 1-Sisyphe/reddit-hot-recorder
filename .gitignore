@@ -3,3 +3,4 @@ __pycache__/
 .pynb_checkpoints/
 reddit_credentials
 thumbs/*.jpg
+plots/*.png
