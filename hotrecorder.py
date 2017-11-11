@@ -1,11 +1,12 @@
 import praw
-import matplotlib.pyplot as plt
-import matplotlib
 import urllib.request
-from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
+import matplotlib.pyplot as plt
+import matplotlib.colors
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import matplotlib.image as mpimg
 from datetime import datetime
 from time import sleep
+import json
 
 with open('reddit_credentials') as f:
     client_id = f.readline().strip('\n')
@@ -13,96 +14,107 @@ with open('reddit_credentials') as f:
     user_agent = f.readline().strip('\n')
 
 def get_data(sub='france', maxposts=10):
-    limit_read = maxposts + 5
-    #read 5 more than asked, to account for the eventual stickied (rarely more than 2 on r/france...)
-    limit_title_len = 70 #max nbr of characters in displayed title
     reddit = praw.Reddit(client_id= client_id,
                          client_secret= client_secret,
                          user_agent= user_agent)
-
+    
+    limit_read = maxposts + 5
+    #read 5 more than asked, to account for the eventual stickied (rarely more than 2 on r/france...)
     submissions = reddit.subreddit(sub).hot(limit=limit_read)
-    ups=[]
-    coms=[]
-    thumbs=[]
-    ages = []
-    titles = []
+    
+    data = {
+    'ups':[],
+    'coms':[],
+    'thumbs':[],
+    'ages':[],
+    'titles':[],
+    'subs':[]
+    }
+
     for submission in submissions:
         if not submission.stickied:
-            ups.append(submission.ups)
-            coms.append(submission.num_comments)
-            title = submission.title
-            if len(title)>limit_title_len:
-                title = title[:limit_title_len-3]+'...'
-            titles.append(title)
+            data['ups'].append(submission.ups)
+            data['coms'].append(submission.num_comments)
+            data['titles'].append(submission.title)
             age = datetime.now() - datetime.fromtimestamp(submission.created_utc)
-            age = divmod(age.total_seconds(), 60*60)[0]
-            ages.append(age)
+            age = divmod(age.total_seconds(), 60*60)[0] #age is in hours
+            data['ages'].append(age)
             try :
                 image_name = submission.name+'.jpg'
                 image_url = submission.preview['images'][0]['resolutions'][0]['url']
                 urllib.request.urlretrieve(image_url, 'thumbs/'+image_name)
             except AttributeError:
                 image_name = '_nopreview.png' #some posts dont have previews. Use _nopreview.png as backup.
-            thumbs.append('thumbs/'+image_name)
+            data['thumbs'].append('thumbs/'+image_name)
+            data['subs'].append(submission.subreddit_name_prefixed) #useful for r/all
 
-    data = {
-    'ups':ups,
-    'coms':coms,
-    'thumbs':thumbs,
-    'ages':ages,
-    'titles':titles
-    }
-
+    #keep only maxposts nbr of posts
     for d in data:
         data[d] = data[d][:maxposts]
+
+    data['timestamp'] = datetime.now().strftime("%b %d %Y %H:%M:%S")
+    data['sub'] = sub
     return(data)
 
-def collect_data(sub='france',maxposts=10,interval=60,ticks=1,feedback=True):
+def collect_data(sub='france',maxposts=10,interval=60,ticks=1,feedback=True,savefile=None):
     datalist = []
-    prev_sum_ups = 0
-    prev_sum_coms = 0
-
     for n in range(ticks):
-        tstp = datetime.now()
         data = get_data(sub,maxposts)
-
-        if n==0:
-            data['delta_ups'] = 0
-            data['delta_coms'] = 0
-        else:
-            data['delta_ups'] = sum(data['ups']) - prev_sum_ups
-            data['delta_coms'] = sum(data['coms']) - prev_sum_coms
-        prev_sum_ups = sum(data['ups'])
-        prev_sum_coms = sum(data['coms'])
-
-        data['timestamp'] = tstp
         datalist.append(data)
         if feedback:
-            print('{}/{} snapshot recorded on {}'.format(n+1,ticks,tstp.strftime('%c')))
+            print('{}/{} snapshot recorded on {}'.format(n+1,ticks,data['timestamp']))
         if n!=ticks-1:
             sleep(interval)
+        if savefile:
+            with open(savefile, 'w') as f:
+                json.dump(datalist, f)
     return datalist
 
+def make_chart(data, increment=1,maxups=None,maxcoms=None,maxage=None,show=False):
+    
+    def format_title(title,post_sub,analysed_sub,limit_title_len):
+        if post_sub != 'r/'+analysed_sub:
+            f_title = post_sub + ' - ' + title
+        else:
+            f_title = title
+        if len(f_title) > limit_title_len:
+            f_title = f_title[:limit_title_len-3]+'...'
+        return f_title
 
-def make_chart(data, increment=1,maxups=None,maxcoms=None,maxage=24,show=False):
+    def crop_image(img, imgheight): #cut the thumbnail in the middle of the height
+        topcut = round(len(img)/2) - round(imgheight/2)
+        bottomcut = round(len(img)/2) + round(imgheight/2)
+        img = img[topcut:bottomcut, :, :]
+        return img
+
+    def make_colormap_age(maxage,ages,cmapname='hot'):
+        cmap = plt.cm.get_cmap(cmapname)
+        norm = matplotlib.colors.Normalize(vmin=0, vmax=maxage)
+        cmapage = []
+        for age in ages:
+            cmapage.append(cmap(norm(age)))
+        return cmapage
+
     imgheight = 50 #crop images at 50px high (108px width by default)
+    limit_title_len = 70 #max nbr of characters in displayed title
+    figsize = (16,9)
     ups = data['ups']
     coms = data['coms']
     thumbs = data['thumbs']
     ages = data['ages']
     titles = data['titles']
-    
+    subs = data['subs']
+    if not maxage:
+        maxage = max(ages)+1
     maxposts = len(ups)
     rge = list(range(1,maxposts+1))
-    cmap = plt.cm.get_cmap('autumn')
-    norm = matplotlib.colors.Normalize(vmin=0, vmax=maxage)
-    cmapage = []
-    for age in ages:
-        cmapage.append(cmap(norm(age)))
-    
+    cmapage = make_colormap_age(maxage=maxage,ages=ages)
+
+    #initiate plot
     plt.rcdefaults()
-    f, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey=True, figsize = (16,9), gridspec_kw = {'width_ratios':[1,0.0001,1]})
+    f, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey=True, figsize = figsize, gridspec_kw = {'width_ratios':[1,0.0001,1]})
     
+    #left side of the plot, where the karma is plotted
     if maxups:
         ax1.set_xlim(0, maxups)
     ax1.barh(rge,ups, color = cmapage)
@@ -113,9 +125,11 @@ def make_chart(data, increment=1,maxups=None,maxcoms=None,maxage=24,show=False):
     ax1.xaxis.tick_top()
     ax1.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
     for n in range(len(titles)):
+        title = format_title(titles[n],subs[n],data['sub'],limit_title_len)
         title_pos = ax1.get_xlim()[0]
-        ax1.text(title_pos,n+1,' '+titles[n])
+        ax1.text(title_pos,n+1,' '+title)
 
+    #right side of the plot, where the comments are plotted
     if maxcoms:
         ax3.set_xlim(0,maxcoms)
     ax3.barh(rge,coms, color = cmapage)
@@ -124,14 +138,16 @@ def make_chart(data, increment=1,maxups=None,maxcoms=None,maxage=24,show=False):
     ax3.xaxis.tick_top()
     ax3.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
 
+    #center of the plot, for pictures
     ax2.axis('off')
     for n in range(len(thumbs)):
-        arr_img = mpimg.imread(thumbs[n])[:imgheight, :, :]
+        arr_img = crop_image(img=mpimg.imread(thumbs[n]),imgheight=imgheight)
         imagebox = OffsetImage(arr_img, 0.7)
         ab = AnnotationBbox(imagebox, (0.5, n+1), frameon=False)
         ax2.add_artist(ab)
 
-    plt.suptitle(data['timestamp'].strftime('%c'))
+    charttitle = 'r/{} - {}'.format(data['sub'],data['timestamp'])
+    plt.suptitle(charttitle)
     plt.yticks(rge)
 
     plotname = 'plots/'+str(increment).zfill(4)+'.png'
@@ -140,6 +156,5 @@ def make_chart(data, increment=1,maxups=None,maxcoms=None,maxage=24,show=False):
     plt.close()
     return plotname
 
-
 if __name__ == '__main__':
-    pass
+    datalist = collect_data(sub='all',interval=10,ticks=10,maxposts=10,savefile='datalist.json')

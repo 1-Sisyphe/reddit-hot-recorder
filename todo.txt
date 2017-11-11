@@ -1,7 +1,9 @@
-plots cleaning
-thumbs cleaning
+#plots cleaning
+#thumbs cleaning
 save preview elsewhere
-add time plot coms and ups
-remove white margins on plots
-correct reddit cred
-cut title in display, not in extract
+#remove white margins on plots
+#correct reddit cred
+#cut title in display, not in extract
+#writing to json
+improve fonts display
+#cut thumbnail in middle

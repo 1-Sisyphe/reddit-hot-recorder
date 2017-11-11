@@ -4,3 +4,4 @@ __pycache__/
 reddit_credentials
 thumbs/*
 plots/*
+*.json
