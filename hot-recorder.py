@@ -137,7 +137,8 @@ def make_chart(data, increment=1,show=False):
     return plotname
 
 
-datalist = collect_data(interval=10,ticks=4)
+if __name__ == '__main__':
+    datalist = collect_data(interval=10,ticks=4)
 
-for n in range(len(datalist)):
-    make_chart(datalist[n],increment=n+1)
+    for n in range(len(datalist)):
+        make_chart(datalist[n],increment=n+1)
