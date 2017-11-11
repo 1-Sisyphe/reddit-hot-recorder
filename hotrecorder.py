@@ -14,7 +14,7 @@ with open('reddit_credentials') as f:
 
 def get_data(sub='france', maxposts=10):
     limit_read = maxposts + 5
-    #read 5 more than needed, to account for the eventual stickied (rarely more than 2 on r/france...)
+    #read 5 more than asked, to account for the eventual stickied (rarely more than 2 on r/france...)
 
     reddit = praw.Reddit(client_id= client_id,
                          client_secret= client_secret,
@@ -43,7 +43,7 @@ def get_data(sub='france', maxposts=10):
                 urllib.request.urlretrieve(image_url, 'thumbs/'+image_name)
             except AttributeError:
                 image_name = '_nopreview.png' #some posts dont have previews. Use _nopreview.png as backup.
-            thumbs.append('thumbs/'+image_name) #thumbnails are stored in a /thumbs folder
+            thumbs.append('thumbs/'+image_name)
 
     data = {
     'ups':ups,
@@ -57,31 +57,28 @@ def get_data(sub='france', maxposts=10):
         data[d] = data[d][:maxposts]
     return(data)
 
-def collect_data(sub='france',maxposts=10,interval=60,ticks=1):
+def collect_data(sub='france',maxposts=10,interval=60,ticks=1,feedback=True):
     datalist = []
     prev_sum_ups = 0
     prev_sum_coms = 0
-    deltas_ups = []
-    deltas_coms = []
 
     for n in range(ticks):
         tstp = datetime.now()
         data = get_data(sub,maxposts)
 
         if n==0:
-            deltas_ups.append(0)
-            deltas_coms.append(0)
+            data['delta_ups'] = 0
+            data['delta_coms'] = 0
         else:
-            deltas_ups.append(sum(data['ups']) - prev_sum_ups)
-            deltas_coms.append(sum(data['coms']) - prev_sum_coms)
+            data['delta_ups'] = sum(data['ups']) - prev_sum_ups
+            data['delta_coms'] = sum(data['coms']) - prev_sum_coms
         prev_sum_ups = sum(data['ups'])
         prev_sum_coms = sum(data['coms'])
-        data['deltas_ups'] = list(deltas_ups)
-        data['deltas_coms'] = list(deltas_coms)
 
         data['timestamp'] = tstp
-        print(tstp)
         datalist.append(data)
+        if feedback:
+            print('{}/{} snapshot recorded on {}'.format(n+1,ticks,tstp.strftime('%c')))
         if n!=ticks-1:
             sleep(interval)
     return datalist
@@ -131,7 +128,7 @@ def make_chart(data, increment=1,show=False):
     plt.suptitle(now.strftime('%c'))
     plt.yticks(rge)
     plotname = 'plots/'+str(increment).zfill(4)+'.png'
-    plt.savefig(plotname) #plots are saved in a /plots folder
+    plt.savefig(plotname)
     if show: plt.show()
     plt.close()
     return plotname
