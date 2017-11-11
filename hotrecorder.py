@@ -15,12 +15,12 @@ with open('reddit_credentials') as f:
 def get_data(sub='france', maxposts=10):
     limit_read = maxposts + 5
     #read 5 more than asked, to account for the eventual stickied (rarely more than 2 on r/france...)
-
+    limit_title_len = 70 #max nbr of characters in displayed title
     reddit = praw.Reddit(client_id= client_id,
                          client_secret= client_secret,
                          user_agent= user_agent)
 
-    submissions = reddit.subreddit('france').hot(limit=limit_read)
+    submissions = reddit.subreddit(sub).hot(limit=limit_read)
     ups=[]
     coms=[]
     thumbs=[]
@@ -31,8 +31,8 @@ def get_data(sub='france', maxposts=10):
             ups.append(submission.ups)
             coms.append(submission.num_comments)
             title = submission.title
-            if len(title)>30:
-                title = title[:27]+'...'
+            if len(title)>limit_title_len:
+                title = title[:limit_title_len-3]+'...'
             titles.append(title)
             age = datetime.now() - datetime.fromtimestamp(submission.created_utc)
             age = divmod(age.total_seconds(), 60*60)[0]
@@ -84,8 +84,8 @@ def collect_data(sub='france',maxposts=10,interval=60,ticks=1,feedback=True):
     return datalist
 
 
-def make_chart(data, increment=1,show=False):
-    now = datetime.now()
+def make_chart(data, increment=1,maxups=None,maxcoms=None,maxage=24,show=False):
+    imgheight = 50 #crop images at 50px high (108px width by default)
     ups = data['ups']
     coms = data['coms']
     thumbs = data['thumbs']
@@ -94,48 +94,52 @@ def make_chart(data, increment=1,show=False):
     
     maxposts = len(ups)
     rge = list(range(1,maxposts+1))
-    cmap = plt.cm.get_cmap('Spectral')
-    norm = matplotlib.colors.Normalize(vmin=0, vmax=24)
+    cmap = plt.cm.get_cmap('autumn')
+    norm = matplotlib.colors.Normalize(vmin=0, vmax=maxage)
     cmapage = []
     for age in ages:
         cmapage.append(cmap(norm(age)))
-
-    maxkarma = 1000
     
     plt.rcdefaults()
-    f, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey=True, figsize = (16,9), gridspec_kw = {'width_ratios':[1,0.02,1]})
-
-    ax1.set_xlim(0, maxkarma)
+    f, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey=True, figsize = (16,9), gridspec_kw = {'width_ratios':[1,0.0001,1]})
+    
+    if maxups:
+        ax1.set_xlim(0, maxups)
     ax1.barh(rge,ups, color = cmapage)
     ax1.invert_xaxis()
     ax1.invert_yaxis()
     ax1.set_xlabel('Karma')
+    ax1.xaxis.set_label_position('top')
+    ax1.xaxis.tick_top()
     ax1.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
     for n in range(len(titles)):
-        ax1.text(maxkarma-10,n+1,titles[n])
+        title_pos = ax1.get_xlim()[0]
+        ax1.text(title_pos,n+1,' '+titles[n])
 
+    if maxcoms:
+        ax3.set_xlim(0,maxcoms)
     ax3.barh(rge,coms, color = cmapage)
     ax3.set_xlabel('Comments')
+    ax3.xaxis.set_label_position('top')
+    ax3.xaxis.tick_top()
     ax3.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
 
     ax2.axis('off')
     for n in range(len(thumbs)):
-        arr_img = mpimg.imread(thumbs[n])
+        arr_img = mpimg.imread(thumbs[n])[:imgheight, :, :]
         imagebox = OffsetImage(arr_img, 0.7)
         ab = AnnotationBbox(imagebox, (0.5, n+1), frameon=False)
         ax2.add_artist(ab)
 
-    plt.suptitle(now.strftime('%c'))
+    plt.suptitle(data['timestamp'].strftime('%c'))
     plt.yticks(rge)
+
     plotname = 'plots/'+str(increment).zfill(4)+'.png'
-    plt.savefig(plotname)
+    plt.savefig(plotname, bbox_inches='tight')
     if show: plt.show()
     plt.close()
     return plotname
 
 
 if __name__ == '__main__':
-    datalist = collect_data(interval=10,ticks=4)
-
-    for n in range(len(datalist)):
-        make_chart(datalist[n],increment=n+1)
+    pass
