@@ -1,6 +1,6 @@
 .directory
 __pycache__/
-.pynb_checkpoints/
+.ipynb_checkpoints/
 reddit_credentials
 thumbs/*.jpg
 plots/*.png
