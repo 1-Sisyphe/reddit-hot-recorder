@@ -70,7 +70,7 @@ def collect_data(sub='france',maxposts=10,interval=60,ticks=1,feedback=True,save
             sleep(interval)
     return datalist
 
-def plot_chart(data, filename='0001.png',maxups=None,maxcoms=None,maxage=None,show=False):
+def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,show=False):
     def format_title(title,post_sub,analysed_sub,limit_title_len):
         if post_sub != 'r/'+analysed_sub:
             f_title = post_sub + ' - ' + title
@@ -167,9 +167,10 @@ def plot_all_charts(datalist,maxups=None, maxage=None,maxcoms=None):
         maxcoms = max([max(d['coms']) for d in datalist])
     if not maxage:
         maxage = max([max(d['ages']) for d in datalist])
+    nbr_zfill = len(str(len(datalist)))
     n=1
     for data in datalist:
-        filename = str(n).zfill(4)+'.png'
+        filename = str(n).zfill(nbr_zfill)+'.png'
         plot_chart(data,filename=filename,maxups=maxups, maxage=maxage,maxcoms=maxcoms,show=False)
         n+=1
 
