@@ -37,7 +37,7 @@ def get_data(sub='france', maxposts=10):
             data['coms'].append(submission.num_comments)
             data['titles'].append(submission.title)
             age = datetime.now() - datetime.fromtimestamp(submission.created_utc)
-            age = divmod(age.total_seconds(), 60*60)[0] #age is in hours
+            age = divmod(age.total_seconds(), 60)[0] #age is min
             data['ages'].append(age)
             try :
                 image_name = submission.name+'.jpg'
@@ -70,8 +70,7 @@ def collect_data(sub='france',maxposts=10,interval=60,ticks=1,feedback=True,save
             sleep(interval)
     return datalist
 
-def plot_chart(data, increment=1,maxups=None,maxcoms=None,maxage=None,show=False):
-#TODO : rework maxups maxcoms, etc. Remove choice
+def plot_chart(data, filename='0001.png',maxups=None,maxcoms=None,maxage=None,show=False):
     def format_title(title,post_sub,analysed_sub,limit_title_len):
         if post_sub != 'r/'+analysed_sub:
             f_title = post_sub + ' - ' + title
@@ -105,10 +104,11 @@ def plot_chart(data, increment=1,maxups=None,maxcoms=None,maxage=None,show=False
     titles = data['titles']
     subs = data['subs']
     if not maxage:
-        maxage = max(ages)+1
+        maxage = max(ages)
+    maxage += 60 #increase maxage to compensate for some colormap giving white on max value
+    cmapage = make_colormap_age(maxage=maxage,ages=ages)
     maxposts = len(ups)
     rge = list(range(1,maxposts+1))
-    cmapage = make_colormap_age(maxage=maxage,ages=ages)
 
     #initiate plot
     plt.rcdefaults()
@@ -150,8 +150,7 @@ def plot_chart(data, increment=1,maxups=None,maxcoms=None,maxage=None,show=False
     plt.suptitle(charttitle)
     plt.yticks(rge)
 
-    plotname = 'plots/'+str(increment).zfill(4)+'.png'
-    plt.savefig(plotname, bbox_inches='tight')
+    plt.savefig('plots/'+filename, bbox_inches='tight')
     if show: plt.show()
     plt.close()
     return plotname
@@ -161,14 +160,29 @@ def read_json(jsonfile):
         datalist = json.load(json_data)
     return datalist
 
-def plot_all_charts(datalist):
+def plot_all_charts(datalist,maxups=None, maxage=None,maxcoms=None):
+    if not maxups:
     maxups = max([max(d['ups']) for d in datalist])
+    if not maxcoms:
     maxcoms = max([max(d['coms']) for d in datalist])
+    if not maxage:
     maxage = max([max(d['ages']) for d in datalist])
     n=1
     for data in datalist:
-        hr.make_chart(data,show=False,increment=n,maxups=maxups, maxage=maxage,maxcoms=maxcoms)
+        filename = str(n).zfill(4)+'.png'
+        hr.make_chart(data,show=False,filename=filename,maxups=maxups, maxage=maxage,maxcoms=maxcoms)
         n+=1
+
+def offset_timestamp(data,delta_hours):
+    '''
+    Add (or remove if negative) delta_hours hours to data['timestamp'].
+    Useful if your extract timestamp is not in the viewer excepted local time.
+    '''
+    from datetime import timedelta
+    timestamp = datetime.strptime(data['timestamp'],"%b %d %Y %H:%M:%S")
+    timestamp = timestamp + timedelta(hours=delta_hours)
+    data['timestamp'] = timestamp.strftime("%b %d %Y %H:%M:%S")
+    return data
 
 if __name__ == '__main__':
     pass
