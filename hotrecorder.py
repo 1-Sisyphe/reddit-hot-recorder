@@ -17,11 +17,11 @@ def get_data(sub='france', maxposts=10):
     reddit = praw.Reddit(client_id= client_id,
                          client_secret= client_secret,
                          user_agent= user_agent)
-    
+
     limit_read = maxposts + 5
     #read 5 more than asked, to account for the eventual stickied (rarely more than 2 on r/france...)
     submissions = reddit.subreddit(sub).hot(limit=limit_read)
-    
+
     data = {
     'ups':[],
     'coms':[],
@@ -63,15 +63,15 @@ def collect_data(sub='france',maxposts=10,interval=60,ticks=1,feedback=True,save
         datalist.append(data)
         if feedback:
             print('{}/{} snapshot recorded on {}'.format(n+1,ticks,data['timestamp']))
-        if n!=ticks-1:
-            sleep(interval)
         if savefile:
             with open(savefile, 'w') as f:
                 json.dump(datalist, f)
+        if n!=ticks-1: #dont sleep if it's the last extract
+            sleep(interval)
     return datalist
 
-def make_chart(data, increment=1,maxups=None,maxcoms=None,maxage=None,show=False):
-    
+def plot_chart(data, increment=1,maxups=None,maxcoms=None,maxage=None,show=False):
+#TODO : rework maxups maxcoms, etc. Remove choice
     def format_title(title,post_sub,analysed_sub,limit_title_len):
         if post_sub != 'r/'+analysed_sub:
             f_title = post_sub + ' - ' + title
@@ -113,7 +113,7 @@ def make_chart(data, increment=1,maxups=None,maxcoms=None,maxage=None,show=False
     #initiate plot
     plt.rcdefaults()
     f, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey=True, figsize = figsize, gridspec_kw = {'width_ratios':[1,0.0001,1]})
-    
+
     #left side of the plot, where the karma is plotted
     if maxups:
         ax1.set_xlim(0, maxups)
@@ -156,5 +156,19 @@ def make_chart(data, increment=1,maxups=None,maxcoms=None,maxage=None,show=False
     plt.close()
     return plotname
 
+def read_json(jsonfile):
+    with open(jsonfile) as json_data:
+        datalist = json.load(json_data)
+    return datalist
+
+def plot_all_charts(datalist):
+    maxups = max([max(d['ups']) for d in datalist])
+    maxcoms = max([max(d['coms']) for d in datalist])
+    maxage = max([max(d['ages']) for d in datalist])
+    n=1
+    for data in datalist:
+        hr.make_chart(data,show=False,increment=n,maxups=maxups, maxage=maxage,maxcoms=maxcoms)
+        n+=1
+
 if __name__ == '__main__':
-    datalist = collect_data(sub='all',interval=10,ticks=10,maxposts=10,savefile='datalist.json')
+    pass

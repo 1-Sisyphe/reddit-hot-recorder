@@ -1,5 +1,10 @@
 import hotrecorder as hr
-datalist = hr.collect_data(sub='france',interval=10,ticks=1,maxposts=10)
+datalist = hr.read_json('datalist.json')
 
-for n in range(len(datalist)):
-    hr.make_chart(datalist[n],increment=n+1,maxage=12,show=True)
+maxups = max([max(d['ups']) for d in datalist])
+maxcoms = max([max(d['coms']) for d in datalist])
+maxage = max([max(d['ages']) for d in datalist])
+n=1
+for data in datalist:
+    hr.make_chart(data,show=False,increment=n,maxups=maxups, maxage=maxage,maxcoms=maxcoms)
+    n+=1
