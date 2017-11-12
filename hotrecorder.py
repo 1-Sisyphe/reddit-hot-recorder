@@ -153,7 +153,7 @@ def plot_chart(data, filename='0001.png',maxups=None,maxcoms=None,maxage=None,sh
     plt.savefig('plots/'+filename, bbox_inches='tight')
     if show: plt.show()
     plt.close()
-    return plotname
+    return
 
 def read_json(jsonfile):
     with open(jsonfile) as json_data:
@@ -162,15 +162,15 @@ def read_json(jsonfile):
 
 def plot_all_charts(datalist,maxups=None, maxage=None,maxcoms=None):
     if not maxups:
-    maxups = max([max(d['ups']) for d in datalist])
+        maxups = max([max(d['ups']) for d in datalist])
     if not maxcoms:
-    maxcoms = max([max(d['coms']) for d in datalist])
+        maxcoms = max([max(d['coms']) for d in datalist])
     if not maxage:
-    maxage = max([max(d['ages']) for d in datalist])
+        maxage = max([max(d['ages']) for d in datalist])
     n=1
     for data in datalist:
         filename = str(n).zfill(4)+'.png'
-        hr.make_chart(data,show=False,filename=filename,maxups=maxups, maxage=maxage,maxcoms=maxcoms)
+        plot_chart(data,filename=filename,maxups=maxups, maxage=maxage,maxcoms=maxcoms,show=False)
         n+=1
 
 def offset_timestamp(data,delta_hours):
