@@ -3,5 +3,5 @@ __pycache__/
 .ipynb_checkpoints/
 reddit_credentials
 thumbs/*
-plots/*
+plots/[0-9]*
 *.json
