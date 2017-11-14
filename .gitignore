@@ -1,7 +1,7 @@
 .directory
 __pycache__/
 .ipynb_checkpoints/
-reddit_credentials
+reddit_credentials.json
 thumbs/*
 plots/[0-9]*
 *.mp4

@@ -1,74 +1,7 @@
-import praw
-import urllib.request
 import matplotlib.pyplot as plt
 import matplotlib.colors
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import matplotlib.image as mpimg
-from datetime import datetime
-from time import sleep
-import json
-
-with open('reddit_credentials') as f:
-    client_id = f.readline().strip('\n')
-    client_secret = f.readline().strip('\n')
-    user_agent = f.readline().strip('\n')
-
-def get_data(sub='france', maxposts=10):
-    reddit = praw.Reddit(client_id= client_id,
-                         client_secret= client_secret,
-                         user_agent= user_agent)
-
-    limit_read = maxposts + 5
-    #read 5 more than asked, to account for the eventual stickied (rarely more than 2 on r/france...)
-    submissions = reddit.subreddit(sub).hot(limit=limit_read)
-
-    data = {
-    'ups':[],
-    'coms':[],
-    'thumbs':[],
-    'ages':[],
-    'titles':[],
-    'subs':[]
-    }
-
-    for submission in submissions:
-        if not submission.stickied:
-            data['ups'].append(submission.ups)
-            data['coms'].append(submission.num_comments)
-            data['titles'].append(submission.title)
-            age = datetime.now() - datetime.fromtimestamp(submission.created_utc)
-            age = divmod(age.total_seconds(), 60)[0] #age is min
-            data['ages'].append(age)
-            try :
-                image_name = submission.name+'.jpg'
-                image_url = submission.preview['images'][0]['resolutions'][0]['url']
-                urllib.request.urlretrieve(image_url, 'thumbs/'+image_name)
-            except AttributeError:
-                image_name = '_nopreview.png' #some posts dont have previews. Use _nopreview.png as backup.
-            data['thumbs'].append('thumbs/'+image_name)
-            data['subs'].append(submission.subreddit_name_prefixed) #useful for r/all
-
-    #keep only maxposts nbr of posts
-    for d in data:
-        data[d] = data[d][:maxposts]
-
-    data['timestamp'] = datetime.now().strftime("%b %d %Y %H:%M:%S")
-    data['sub'] = sub
-    return(data)
-
-def collect_data(sub='france',maxposts=10,interval=60,ticks=1,feedback=True,savefile=None):
-    datalist = []
-    for n in range(ticks):
-        data = get_data(sub,maxposts)
-        datalist.append(data)
-        if feedback:
-            print('{}/{} snapshot recorded on {}'.format(n+1,ticks,data['timestamp']))
-        if savefile:
-            with open(savefile, 'w') as f:
-                json.dump(datalist, f)
-        if n!=ticks-1: #dont sleep if it's the last extract
-            sleep(interval)
-    return datalist
 
 def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,show=False):
     def format_title(title,post_sub,analysed_sub,limit_title_len):
@@ -155,35 +88,16 @@ def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sh
     plt.close()
     return
 
-def read_json(jsonfile):
-    with open(jsonfile) as json_data:
-        datalist = json.load(json_data)
-    return datalist
-
-def plot_all_charts(datalist,maxups=None, maxage=None,maxcoms=None):
+def plot_collec(data_collec,maxups=None, maxage=None,maxcoms=None):
     if not maxups:
-        maxups = max([max(d['ups']) for d in datalist])
+        maxups = max([max(d['ups']) for d in data_collec])
     if not maxcoms:
-        maxcoms = max([max(d['coms']) for d in datalist])
+        maxcoms = max([max(d['coms']) for d in data_collec])
     if not maxage:
-        maxage = max([max(d['ages']) for d in datalist])
-    nbr_zfill = len(str(len(datalist)))
+        maxage = max([max(d['ages']) for d in data_collec])
+    nbr_zfill = len(str(len(data_collec)))
     n=1
-    for data in datalist:
+    for data in data_collec:
         filename = str(n).zfill(nbr_zfill)+'.png'
         plot_chart(data,filename=filename,maxups=maxups, maxage=maxage,maxcoms=maxcoms,show=False)
         n+=1
-
-def offset_timestamp(data,delta_hours):
-    '''
-    Add (or remove if negative) delta_hours hours to data['timestamp'].
-    Useful if your extract timestamp is not in the viewer excepted local time.
-    '''
-    from datetime import timedelta
-    timestamp = datetime.strptime(data['timestamp'],"%b %d %Y %H:%M:%S")
-    timestamp = timestamp + timedelta(hours=delta_hours)
-    data['timestamp'] = timestamp.strftime("%b %d %Y %H:%M:%S")
-    return data
-
-if __name__ == '__main__':
-    pass

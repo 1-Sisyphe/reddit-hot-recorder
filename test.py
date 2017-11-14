@@ -1,13 +1,14 @@
-import hotrecorder as hr
+import hotcollect
+import hotplot
 
 if False:
-    datalist = hr.read_json('datalist.json')
-    for data in datalist:
-        data = hr.offset_timestamp(data, -7)
+    data_collec = hotcollect.read_json('data_collec.json')
+    for data in data_collec:
+        data = hotcollect.offset_timestamp(data, -7)
 
-    hr.plot_all_charts(datalist)
+    hotplot.plot_all_charts(data_collec)
 
 if True:
-    datalist = hr.collect_data(sub='all',maxposts=10,interval=10,ticks=5,feedback=True)
-    for data in datalist: data = hr.offset_timestamp(data, -7)
-    hr.plot_all_charts(datalist)
+    data_collec = hotcollect.collect_data(sub='all',maxposts=10,interval=10,ticks=2,feedback=True)
+    for data in data_collec: data = hotcollect.offset_timestamp(data, -7)
+    hotplot.plot_collec(data_collec)
