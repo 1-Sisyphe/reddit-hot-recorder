@@ -4,7 +4,15 @@ from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import matplotlib.image as mpimg
 
 def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,show=False):
+    '''
+    Where the plotting magic happens.
+    plot_chart works on a data point. It can be used directly after get_data.
+    After collect_data, plot_collec should be prefered, to correctly handle the max... args.
+    If max... args are None, plot_chart will freely adapt the chart and color.
+    '''
     def format_title(title,post_sub,analysed_sub,limit_title_len):
+        '''reformat the title if too long and add the sub name if different from
+        the analysed sub'''
         if post_sub != 'r/'+analysed_sub:
             f_title = post_sub + ' - ' + title
         else:
@@ -13,15 +21,19 @@ def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sh
             f_title = f_title[:limit_title_len-3]+'...'
         return f_title
 
-    def crop_image(img, imgheight): #cut the thumbnail in the middle of the height
+    def crop_image(img, imgheight):
+        '''cut the thumbnail in the middle of the height'''
         topcut = round(len(img)/2) - round(imgheight/2)
         bottomcut = round(len(img)/2) + round(imgheight/2)
         img = img[topcut:bottomcut, :, :]
         return img
 
     def make_colormap_age(maxage,ages,cmapname='hot'):
+        '''prepare the colormap'''
         cmap = plt.cm.get_cmap(cmapname)
-        norm = matplotlib.colors.Normalize(vmin=0, vmax=maxage)
+        norm = matplotlib.colors.Normalize(vmin=0, vmax=1.05*maxage)
+        #avoid that vmax matches the max of the color map, otherwise
+        #it could be white with certain cmaps
         cmapage = []
         for age in ages:
             cmapage.append(cmap(norm(age)))
@@ -38,7 +50,6 @@ def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sh
     subs = data['subs']
     if not maxage:
         maxage = max(ages)
-    maxage += 60 #increase maxage to compensate for some colormap giving white on max value
     cmapage = make_colormap_age(maxage=maxage,ages=ages)
     maxposts = len(ups)
     rge = list(range(1,maxposts+1))
@@ -89,6 +100,11 @@ def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sh
     return
 
 def plot_collec(data_collec,maxups=None, maxage=None,maxcoms=None):
+    '''
+    Prepares the max... args to make sure that the highest value of the axis
+    and the max color of the color map covers all the data_collec.
+    Then, launch the loop to plot each data point.
+    '''
     if not maxups:
         maxups = max([max(d['ups']) for d in data_collec])
     if not maxcoms:
