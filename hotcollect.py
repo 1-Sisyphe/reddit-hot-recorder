@@ -22,8 +22,8 @@ def get_reddit(credfile = 'reddit_credentials.json'):
 
 def get_data(reddit=None,sub='all', maxposts=10):
     '''
-    Extract one datapoint consisting of maxposts posts, from the targeted sub.
-    For each post, extract:
+    Extracts one datapoint consisting of maxposts posts, from the targeted sub.
+    For each post, it extracts:
     -number of ups (=karma)
     -number of Comments
     -thumbnail
