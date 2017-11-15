@@ -1,14 +1,23 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors
+import matplotlib.image
+import matplotlib.gridspec as gridspec
+import matplotlib.dates as mdates
+import matplotlib.ticker as mticker
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-import matplotlib.image as mpimg
+from numpy import mean
+from datetime import datetime
 
-def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,show=False):
+def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,show=False, timeline = None):
     '''
     Where the plotting magic happens.
     plot_chart works on a data point. It can be used directly after get_data.
-    After collect_data, plot_collec should be prefered, to correctly handle the max... args.
+    After collect_data, plot_collec should be preferred, to correctly handle the max... args.
     If max... args are None, plot_chart will freely adapt the chart and color.
+
+    timeline contains specific data from plot_collec and is required to plot the upper timeline.
+    Plotting the timeline requires a full knowledge of the data_collec and therefore
+    doesnt work on a single data.
     '''
     def format_title(title,post_sub,analysed_sub,limit_title_len):
         '''reformat the title if too long and add the sub name if different from
@@ -56,43 +65,49 @@ def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sh
 
     #initiate plot
     plt.rcdefaults()
-    f, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey=True, figsize = figsize, gridspec_kw = {'width_ratios':[1,0.0001,1]})
+    plt.yticks(rge)
+    fig = plt.figure(figsize = figsize)
+    gs = gridspec.GridSpec(2, 3, width_ratios=[1,0.001,1], height_ratios=[1,5])
+    #ax1,ax11,ax12 = plt.subplots(1, 3, sharey=True,gridspec_kw = {'width_ratios':[1,0.0001,1]})
+
+    #top of the plot, where the timeline is plotted
+    #if timeline:
+    ax00 = plt.subplot(gs[0,:])
 
     #left side of the plot, where the karma is plotted
+    ax10 = plt.subplot(gs[1,0])
     if maxups:
-        ax1.set_xlim(0, maxups)
-    ax1.barh(rge,ups, color = cmapage)
-    ax1.invert_xaxis()
-    ax1.invert_yaxis()
-    ax1.set_xlabel('Karma')
-    ax1.xaxis.set_label_position('top')
-    ax1.xaxis.tick_top()
-    ax1.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
+        ax10.set_xlim(0, maxups)
+    ax10.barh(rge,ups, color = cmapage)
+    ax10.invert_xaxis()
+    ax10.invert_yaxis()
+    ax10.set_xlabel('Karma')
+    ax10.xaxis.set_label_position('bottom')
+    ax10.xaxis.tick_bottom()
+    ax10.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
     for n in range(len(titles)):
         title = format_title(titles[n],subs[n],data['sub'],limit_title_len)
-        title_pos = ax1.get_xlim()[0]
-        ax1.text(title_pos,n+1,' '+title)
+        title_pos = ax10.get_xlim()[0]
+        ax10.text(title_pos,n+1,' '+title)
 
     #right side of the plot, where the comments are plotted
+    ax12 = plt.subplot(gs[1,2], sharey=ax10)
     if maxcoms:
-        ax3.set_xlim(0,maxcoms)
-    ax3.barh(rge,coms, color = cmapage)
-    ax3.set_xlabel('Comments')
-    ax3.xaxis.set_label_position('top')
-    ax3.xaxis.tick_top()
-    ax3.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
+        ax12.set_xlim(0,maxcoms)
+    ax12.barh(rge,coms, color = cmapage)
+    ax12.set_xlabel('Comments')
+    ax12.xaxis.set_label_position('bottom')
+    ax12.xaxis.tick_bottom()
+    ax12.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
 
     #center of the plot, for pictures
-    ax2.axis('off')
+    ax11 = plt.subplot(gs[1,1], sharey=ax10)
+    ax11.axis('off')
     for n in range(len(thumbs)):
-        arr_img = crop_image(img=mpimg.imread(thumbs[n]),imgheight=imgheight)
+        arr_img = crop_image(img=matplotlib.image.imread(thumbs[n]),imgheight=imgheight)
         imagebox = OffsetImage(arr_img, 0.7)
         ab = AnnotationBbox(imagebox, (0.5, n+1), frameon=False)
-        ax2.add_artist(ab)
-
-    charttitle = 'r/{} - {}'.format(data['sub'],data['timestamp'])
-    plt.suptitle(charttitle)
-    plt.yticks(rge)
+        ax11.add_artist(ab)
 
     plt.savefig('plots/'+filename, bbox_inches='tight')
     if show: plt.show()
@@ -103,6 +118,7 @@ def plot_collec(data_collec,maxups=None, maxage=None,maxcoms=None):
     '''
     Prepares the max... args to make sure that the highest value of the axis
     and the max color of the color map covers all the data_collec.
+    Prepares the timeline_data required for plotting the timeline.
     Then, launch the loop to plot each data point.
     '''
     if not maxups:
@@ -112,8 +128,15 @@ def plot_collec(data_collec,maxups=None, maxage=None,maxcoms=None):
     if not maxage:
         maxage = max([max(d['ages']) for d in data_collec])
     nbr_zfill = len(str(len(data_collec)))
+
+    timeline = {
+       'ups':[mean(data['ups']) for data in data_collec],
+       'coms':[mean(data['coms']) for data in data_collec],
+       'dates':[datetime.strptime(data['timestamp'],"%b %d %Y %H:%M:%S") for data in data_collec]
+       }
+
     n=1
     for data in data_collec:
         filename = str(n).zfill(nbr_zfill)+'.png'
-        plot_chart(data,filename=filename,maxups=maxups, maxage=maxage,maxcoms=maxcoms,show=False)
+        plot_chart(data,filename=filename,maxups=maxups, maxage=maxage,maxcoms=maxcoms,show=False, timeline = timeline)
         n+=1

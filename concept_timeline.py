@@ -4,13 +4,15 @@ import matplotlib.dates as mdates
 import matplotlib.ticker as mticker
 import random
 from numpy import cumsum, mean
-import hotrecorder as hr
+import hotcollect as hr
+import json
 
-data_collec = hr.read_json('datacollec.json')
+with open('test.json') as jfile:
+    data_collec = json.load(jfile)
 
 date_list = [datetime.strptime(data['timestamp'],"%b %d %Y %H:%M:%S") for data in data_collec]
 
-spot = date_list[200]
+spot = date_list[10]
 
 ups = [mean(data['ups']) for data in data_collec]
 coms = [mean(data['coms']) for data in data_collec]
