@@ -20,7 +20,7 @@ def get_reddit(credfile = 'reddit_credentials.json'):
                          user_agent= cred['user_agent'])
     return reddit
 
-def get_data(reddit=None,sub='france', maxposts=10):
+def get_data(reddit=None,sub='all', maxposts=10):
     '''
     Extract one datapoint consisting of maxposts posts, from the targeted sub.
     For each post, extract:
@@ -72,13 +72,15 @@ def get_data(reddit=None,sub='france', maxposts=10):
     data['sub'] = sub
     return data
 
-def collect_data(sub='france',maxposts=10,interval=10,size=10,feedback=True,savefile=None):
+def collect_data(sub='all',maxposts=10,interval_sec=30,duration_min=10,feedback=True,savefile=None):
     '''
-    This module repeats the get_data function as many times as specified by size, at every interval in seconds.
+    This module repeats the get_data function during the duration_min in minutes, at every interval_sec in seconds.
     feedback = True will print out a progress information.
     savefile must be a json file name to dump the data in. Data is dumped at each loop.
     Returns data_collec, a list of data from get_data.
     '''
+    #TODO: Clear plot folder
+    size = round((duration_min*60)/interval_sec)
     reddit = get_reddit()
     data_collec = []
     for n in range(size):
@@ -90,7 +92,7 @@ def collect_data(sub='france',maxposts=10,interval=10,size=10,feedback=True,save
             with open(savefile, 'w') as f:
                 json.dump(data_collec, f)
         if n!=size-1: #dont sleep if it's the last extract
-            sleep(interval)
+            sleep(interval_sec)
     return data_collec
 
 def offset_timestamp(data,delta_hours):
