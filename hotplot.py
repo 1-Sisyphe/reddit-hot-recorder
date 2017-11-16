@@ -37,7 +37,7 @@ def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sho
         img = img[topcut:bottomcut, :, :]
         return img
 
-    def make_colormap_age(maxage,ages,cmapname='hot'):
+    def make_colormap_age(maxage,ages,cmapname='GnBu'):
         '''prepare the colormap'''
         cmap = plt.cm.get_cmap(cmapname)
         norm = matplotlib.colors.Normalize(vmin=0, vmax=1.05*maxage)
@@ -50,9 +50,16 @@ def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sho
             cmapage.append(cmap(norm(age)))
         return cmapage, sm
 
-    imgheight = 50 #crop images at 50px high (108px width by default)
-    limit_title_len = 70 #max nbr of characters in displayed title
-    figsize = (16,9)
+    def rm_frames(ax):
+        '''shortcut to remove all frames of a subplot'''
+        ax.spines['left'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+
+    imgheight = 48 #crop images at 50px high (108px width by default)
+    limit_title_len = 65 #max nbr of characters in displayed title
+    figsize = (18,10)
     ups = data['ups']
     coms = data['coms']
     thumbs = data['thumbs']
@@ -67,10 +74,10 @@ def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sho
 
     #initiate plot
     plt.rcdefaults()
-    matplotlib.rcParams.update({'font.size': 11})
+    matplotlib.rcParams.update({'font.size': 13})
     plt.yticks(list_yticks)
     fig = plt.figure(figsize = figsize)
-    gs = gridspec.GridSpec(2, 4, width_ratios=[1,0.05,1,0.05], height_ratios=[1,5])
+    gs = gridspec.GridSpec(2, 5, width_ratios=[0.3,1.5,0.3,1.5,0.1], height_ratios=[1,5])
     #Grid is 2 rows * 4 columns
     #Top row is for the timeline
     #Bottom row is for karma bars / thumbnails / comments bars / colormap legend
@@ -79,78 +86,88 @@ def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sho
     if timeline:
         color_ups = '#549ED6'
         color_coms = '#33cc33'
-        ax00 = plt.subplot(gs[0,:])
+        ax_tl = plt.subplot(gs[0,1:4])
+        rm_frames(ax_tl)
+        ax_tl.spines['bottom'].set_visible(True)
         tl_ups = timeline['ups']
         tl_coms = timeline['coms']
         tl_ages = timeline['ages']
         tl_dates = timeline['dates']
         curr_date = datetime.strptime(data['timestamp'],"%b %d %Y %H:%M:%S")
         idx_curr_date = tl_dates.index(curr_date)
-        ax00.plot(tl_dates[:idx_curr_date+1],tl_ups[:idx_curr_date+1],color=color_ups)
-        ax00.plot(tl_dates[idx_curr_date:],tl_ups[idx_curr_date:],color=color_ups, alpha=0.1)
-        ax00.set_ylabel('mean(Karma)', color=color_ups)
-        ax00.tick_params('y', colors=color_ups)
-        ax01 = ax00.twinx()
-        ax01.plot(tl_dates[:idx_curr_date+1],tl_ages[:idx_curr_date+1],color=color_coms)
-        ax01.plot(tl_dates[idx_curr_date:],tl_ages[idx_curr_date:],color=color_coms, alpha=0.1)
-        ax01.set_ylabel('mean(ages in min)', color=color_coms)
-        ax01.tick_params('y', colors=color_coms)
-        ax01.xaxis.set_major_locator(mdates.HourLocator())
-        ax01.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+        ax_tl.plot(tl_dates[:idx_curr_date+1],tl_ups[:idx_curr_date+1],color=color_ups)
+        ax_tl.plot(tl_dates[idx_curr_date:],tl_ups[idx_curr_date:],color=color_ups, alpha=0.1)
+        ax_tl.set_ylabel('mean(Karma)', color=color_ups)
+        ax_tl.tick_params('y', colors=color_ups)
+        ax_tl.yaxis.set_major_locator(mticker.LinearLocator(3))
+        ax_tl.yaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
+        ax_tltwin = ax_tl.twinx()
+        rm_frames(ax_tltwin)
+        ax_tltwin.plot(tl_dates[:idx_curr_date+1],tl_ages[:idx_curr_date+1],color=color_coms)
+        ax_tltwin.plot(tl_dates[idx_curr_date:],tl_ages[idx_curr_date:],color=color_coms, alpha=0.1)
+        ax_tltwin.set_ylabel('mean(ages in min)', color=color_coms)
+        ax_tltwin.tick_params('y', colors=color_coms)
+        ax_tltwin.yaxis.set_major_locator(mticker.LinearLocator(3))
+        #ax_tltwin.xaxis.set_major_locator(mdates.HourLocator())
+        ax_tltwin.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
     else: #if no timeline, when plot_data is used on a single data point, fill
           #the empty space with a title.
           #TODO: improve that part to make better use of the space...
-        ax00 = plt.subplot(gs[0,:])
-        ax00.axis('off')
+        ax_tl = plt.subplot(gs[0,1:])
+        ax_tl.axis('off')
         text_title = 'r/' + data['sub'] + ' - ' + data['timestamp']
-        ax00.text(0.4,0.5,text_title,fontsize=16, fontweight='bold')
+        ax_tl.text(0.4,0.5,text_title,fontsize=16, fontweight='bold')
 
     #left side of the plot, where the karma is plotted
-    ax10 = plt.subplot(gs[1,0])
+    ax_ups = plt.subplot(gs[1,:2])
+    rm_frames(ax_ups)
     if maxups:
-        ax10.set_xlim(0, maxups)
-    ax10.yaxis.set_major_locator(mticker.MultipleLocator(base=1.0))
-    ax10.barh(list_yticks,ups, color = cmapage)
-    ax10.invert_xaxis()
-    ax10.invert_yaxis()
-    ax10.set_xlabel('Karma')
-    ax10.xaxis.set_label_position('bottom')
-    ax10.xaxis.tick_bottom()
-    ax10.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
+        ax_ups.set_xlim(0, maxups)
+    ax_ups.barh(list_yticks,ups, color = cmapage)
+    ax_ups.invert_xaxis()
+    ax_ups.invert_yaxis()
+    ax_ups.set_xlabel('Karma')
+    ax_ups.xaxis.set_label_position('bottom')
+    ax_ups.xaxis.tick_bottom()
+    ax_ups.set_yticks([])
+    plt.setp(ax_ups.get_yticklabels(), visible=False)
+    ax_ups.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
     for n in range(len(titles)):
         title = format_title(titles[n],subs[n],data['sub'],limit_title_len)
-        title_pos = ax10.get_xlim()[0]
-        ax10.text(title_pos,n+1,' '+title)
+        title_pos = ax_ups.get_xlim()[0]
+        ax_ups.text(title_pos,n+1,' '+title)
 
     #center of the plot, for pictures
-    ax11 = plt.subplot(gs[1,1], sharey=ax10)
-    ax11.axis('off')
+    ax_thumbs = plt.subplot(gs[1,2], sharey=ax_ups)
+    ax_thumbs.set_yticklabels([])
+    ax_thumbs.axis('off')
     for n in range(len(thumbs)):
         arr_img = crop_image(img=matplotlib.image.imread(thumbs[n]),imgheight=imgheight)
         imagebox = OffsetImage(arr_img, 0.7)
         ab = AnnotationBbox(imagebox, (0.5, n+1), frameon=False)
-        ax11.add_artist(ab)
+        ax_thumbs.add_artist(ab)
 
     #right side of the plot, where the comments are plotted
-    ax12 = plt.subplot(gs[1,2], sharey=ax10)
+    ax_coms = plt.subplot(gs[1,3], sharey=ax_ups)
+    rm_frames(ax_coms)
     if maxcoms:
-        ax12.set_xlim(0,maxcoms)
-    ax12.barh(list_yticks,coms, color = cmapage)
-    ax12.set_xlabel('Comments')
-    plt.setp(ax12.get_yticklabels(), visible=False)
-    ax12.xaxis.set_label_position('bottom')
-    ax12.xaxis.tick_bottom()
-    ax12.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
+        ax_coms.set_xlim(0,maxcoms)
+    ax_coms.barh(list_yticks,coms, color = cmapage)
+    ax_coms.set_xlabel('Comments')
+    plt.setp(ax_coms.get_yticklabels(), visible=False)
+    ax_coms.xaxis.set_label_position('bottom')
+    ax_coms.xaxis.tick_bottom()
+    ax_coms.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
 
     #colormap legend
-    ax13 = plt.subplot(gs[1,3])
-    cbar = plt.colorbar(sm, cax = ax13)
+    ax_cbar = plt.subplot(gs[1,4])
+    cbar = plt.colorbar(sm, cax = ax_cbar)
     cbar.set_label('age in minutes')
     cbar.locator = mticker.MultipleLocator(base=60)
     cbar.update_ticks()
-
-    plt.tight_layout()
-    plt.savefig('plots/'+filename)
+    plt.subplots_adjust(wspace=0.05, hspace=0.2)
+    #plt.tight_layout(w_pad=0)
+    plt.savefig('plots/'+filename, bbox_inches='tight')
     if show: plt.show()
     plt.close()
     return
