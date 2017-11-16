@@ -37,7 +37,7 @@ def get_data(reddit=None,sub='all', maxposts=10):
 
     limit_read = maxposts + 2 #read two more posts than asked, in case of stickies
     submissions = reddit.subreddit(sub).hot(limit=limit_read)
-
+    thumbnailsfolder = 'thumbnails/'
     data = {
     'ups':[],
     'coms':[],
@@ -56,12 +56,12 @@ def get_data(reddit=None,sub='all', maxposts=10):
             age = divmod(age.total_seconds(), 60)[0] #age is in minutes
             data['ages'].append(age)
             try : #some posts dont have previews. Use _nopreview.png as backup.
-                image_name = submission.name+'.jpg'
+                image_name = thumbnailsfolder + submission.name + '.jpg'
                 image_url = submission.preview['images'][0]['resolutions'][0]['url']
-                urllib.request.urlretrieve(image_url, 'thumbs/'+image_name)
+                urllib.request.urlretrieve(image_url, image_name)
             except AttributeError:
                 image_name = '_nopreview.png'
-            data['thumbs'].append('thumbs/'+image_name)
+            data['thumbs'].append(image_name)
             data['subs'].append(submission.subreddit_name_prefixed) #useful for r/all
 
     #keep only maxposts nbr of posts, so remove the stickies if any
