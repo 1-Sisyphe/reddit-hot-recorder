@@ -43,10 +43,12 @@ def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sh
         norm = matplotlib.colors.Normalize(vmin=0, vmax=1.05*maxage)
         #avoid that vmax matches the max of the color map, otherwise
         #it could be white with certain cmaps
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])
         cmapage = []
         for age in ages:
             cmapage.append(cmap(norm(age)))
-        return cmapage
+        return cmapage, sm
 
     imgheight = 50 #crop images at 50px high (108px width by default)
     limit_title_len = 70 #max nbr of characters in displayed title
@@ -59,25 +61,50 @@ def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sh
     subs = data['subs']
     if not maxage:
         maxage = max(ages)
-    cmapage = make_colormap_age(maxage=maxage,ages=ages)
+    cmapage, sm = make_colormap_age(maxage=maxage,ages=ages)
     maxposts = len(ups)
     rge = list(range(1,maxposts+1))
 
     #initiate plot
     plt.rcdefaults()
+    matplotlib.rcParams.update({'font.size': 11})
     plt.yticks(rge)
     fig = plt.figure(figsize = figsize)
-    gs = gridspec.GridSpec(2, 3, width_ratios=[1,0.001,1], height_ratios=[1,5])
+    gs = gridspec.GridSpec(2, 4, width_ratios=[1,0.05,1,0.05], height_ratios=[1,5])
     #ax1,ax11,ax12 = plt.subplots(1, 3, sharey=True,gridspec_kw = {'width_ratios':[1,0.0001,1]})
 
     #top of the plot, where the timeline is plotted
     #if timeline:
+    color_ups = '#549ED6'
+    color_coms = '#33cc33'
     ax00 = plt.subplot(gs[0,:])
+    tl_ups = timeline['ups']
+    tl_coms = timeline['coms']
+    tl_dates = timeline['dates']
+    curr_date = datetime.strptime(data['timestamp'],"%b %d %Y %H:%M:%S")
+    idx_curr_date = tl_dates.index(curr_date)
+    ax00.plot(tl_dates[:idx_curr_date+1],tl_ups[:idx_curr_date+1],color=color_ups)
+    ax00.plot(tl_dates[idx_curr_date:],tl_ups[idx_curr_date:],color=color_ups, alpha=0.1)
+    #ax1.plot([spot,spot],[0,max(test)],'k-', color ='grey')
+    ax00.set_ylabel('mean(Karma)', color=color_ups)
+    ax00.tick_params('y', colors=color_ups)
+    #ax00.yaxis.set_major_locator(mticker.MultipleLocator(5000))
+    ax00.xaxis.set_major_locator(mdates.HourLocator())
+    ax00.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M\n%d %b"))
+    ax01 = ax00.twinx()
+    ax01.plot(tl_dates[:idx_curr_date+1],tl_coms[:idx_curr_date+1],color=color_coms)
+    ax01.plot(tl_dates[idx_curr_date:],tl_coms[idx_curr_date:],color=color_coms, alpha=0.1)
+    ax01.set_ylabel('mean(comments)', color=color_coms)
+    ax01.tick_params('y', colors=color_coms)
+    #ax01.yaxis.set_major_locator(mticker.MultipleLocator(100))
+    ax01.xaxis.set_major_locator(mdates.HourLocator())
+    ax01.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
 
     #left side of the plot, where the karma is plotted
     ax10 = plt.subplot(gs[1,0])
     if maxups:
         ax10.set_xlim(0, maxups)
+    ax10.yaxis.set_major_locator(mticker.MultipleLocator(base=1.0))
     ax10.barh(rge,ups, color = cmapage)
     ax10.invert_xaxis()
     ax10.invert_yaxis()
@@ -90,16 +117,6 @@ def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sh
         title_pos = ax10.get_xlim()[0]
         ax10.text(title_pos,n+1,' '+title)
 
-    #right side of the plot, where the comments are plotted
-    ax12 = plt.subplot(gs[1,2], sharey=ax10)
-    if maxcoms:
-        ax12.set_xlim(0,maxcoms)
-    ax12.barh(rge,coms, color = cmapage)
-    ax12.set_xlabel('Comments')
-    ax12.xaxis.set_label_position('bottom')
-    ax12.xaxis.tick_bottom()
-    ax12.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
-
     #center of the plot, for pictures
     ax11 = plt.subplot(gs[1,1], sharey=ax10)
     ax11.axis('off')
@@ -109,7 +126,23 @@ def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sh
         ab = AnnotationBbox(imagebox, (0.5, n+1), frameon=False)
         ax11.add_artist(ab)
 
-    plt.savefig('plots/'+filename, bbox_inches='tight')
+    #right side of the plot, where the comments are plotted
+    ax12 = plt.subplot(gs[1,2], sharey=ax10)
+    if maxcoms:
+        ax12.set_xlim(0,maxcoms)
+    ax12.barh(rge,coms, color = cmapage)
+    ax12.set_xlabel('Comments')
+    plt.setp(ax12.get_yticklabels(), visible=False)
+    ax12.xaxis.set_label_position('bottom')
+    ax12.xaxis.tick_bottom()
+    ax12.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
+
+    ax13 = plt.subplot(gs[1,3])
+    cbar = plt.colorbar(sm, cax = ax13)
+    cbar.set_label('age in minutes')
+    plt.tight_layout()
+    #plt.savefig('plots/'+filename, bbox_inches='tight')
+    plt.savefig('plots/'+filename)
     if show: plt.show()
     plt.close()
     return
@@ -140,3 +173,13 @@ def plot_collec(data_collec,maxups=None, maxage=None,maxcoms=None):
         filename = str(n).zfill(nbr_zfill)+'.png'
         plot_chart(data,filename=filename,maxups=maxups, maxage=maxage,maxcoms=maxcoms,show=False, timeline = timeline)
         n+=1
+
+if __name__ == '__main__':
+    import json
+    import hotcollect
+    if True:
+        with open('test.json') as j:
+            data_collec = json.load(j)
+        for data in data_collec:
+            data = hotcollect.offset_timestamp(data, -7)
+        plot_collec(data_collec)
