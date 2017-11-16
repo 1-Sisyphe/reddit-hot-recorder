@@ -82,6 +82,7 @@ def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sho
         ax00 = plt.subplot(gs[0,:])
         tl_ups = timeline['ups']
         tl_coms = timeline['coms']
+        tl_ages = timeline['ages']
         tl_dates = timeline['dates']
         curr_date = datetime.strptime(data['timestamp'],"%b %d %Y %H:%M:%S")
         idx_curr_date = tl_dates.index(curr_date)
@@ -90,9 +91,9 @@ def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sho
         ax00.set_ylabel('mean(Karma)', color=color_ups)
         ax00.tick_params('y', colors=color_ups)
         ax01 = ax00.twinx()
-        ax01.plot(tl_dates[:idx_curr_date+1],tl_coms[:idx_curr_date+1],color=color_coms)
-        ax01.plot(tl_dates[idx_curr_date:],tl_coms[idx_curr_date:],color=color_coms, alpha=0.1)
-        ax01.set_ylabel('mean(Comments)', color=color_coms)
+        ax01.plot(tl_dates[:idx_curr_date+1],tl_ages[:idx_curr_date+1],color=color_coms)
+        ax01.plot(tl_dates[idx_curr_date:],tl_ages[idx_curr_date:],color=color_coms, alpha=0.1)
+        ax01.set_ylabel('mean(ages in min)', color=color_coms)
         ax01.tick_params('y', colors=color_coms)
         ax01.xaxis.set_major_locator(mdates.HourLocator())
         ax01.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
@@ -172,7 +173,8 @@ def plot_collec(data_collec,maxups=None, maxage=None,maxcoms=None):
     timeline = {
        'ups':[mean(data['ups']) for data in data_collec],
        'coms':[mean(data['coms']) for data in data_collec],
-       'dates':[datetime.strptime(data['timestamp'],"%b %d %Y %H:%M:%S") for data in data_collec]
+       'dates':[datetime.strptime(data['timestamp'],"%b %d %Y %H:%M:%S") for data in data_collec],
+       'ages': [mean(data['ages']) for data in data_collec]
        }
 
     n=1
