@@ -8,12 +8,12 @@ from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from numpy import mean
 from datetime import datetime
 
-def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,show=False, timeline = None):
+def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,show=False, timeline = None):
     '''
     Where the plotting magic happens.
-    plot_chart works on a data point. It can be used directly after get_data.
+    plot_data works on a data point. It can be used directly after get_data.
     After collect_data, plot_collec should be preferred, to correctly handle the max... args.
-    If max... args are None, plot_chart will freely adapt the chart and color.
+    If max... args are None, plot_data will freely adapt the chart and color.
 
     timeline contains specific data from plot_collec and is required to plot the upper timeline.
     Plotting the timeline requires a full knowledge of the data_collec and therefore
@@ -63,49 +63,53 @@ def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sh
         maxage = max(ages)
     cmapage, sm = make_colormap_age(maxage=maxage,ages=ages)
     maxposts = len(ups)
-    rge = list(range(1,maxposts+1))
+    list_yticks = list(range(1,maxposts+1))
 
     #initiate plot
     plt.rcdefaults()
     matplotlib.rcParams.update({'font.size': 11})
-    plt.yticks(rge)
+    plt.yticks(list_yticks)
     fig = plt.figure(figsize = figsize)
     gs = gridspec.GridSpec(2, 4, width_ratios=[1,0.05,1,0.05], height_ratios=[1,5])
-    #ax1,ax11,ax12 = plt.subplots(1, 3, sharey=True,gridspec_kw = {'width_ratios':[1,0.0001,1]})
+    #Grid is 2 rows * 4 columns
+    #Top row is for the timeline
+    #Bottom row is for karma bars / thumbnails / comments bars / colormap legend
 
     #top of the plot, where the timeline is plotted
-    #if timeline:
-    color_ups = '#549ED6'
-    color_coms = '#33cc33'
-    ax00 = plt.subplot(gs[0,:])
-    tl_ups = timeline['ups']
-    tl_coms = timeline['coms']
-    tl_dates = timeline['dates']
-    curr_date = datetime.strptime(data['timestamp'],"%b %d %Y %H:%M:%S")
-    idx_curr_date = tl_dates.index(curr_date)
-    ax00.plot(tl_dates[:idx_curr_date+1],tl_ups[:idx_curr_date+1],color=color_ups)
-    ax00.plot(tl_dates[idx_curr_date:],tl_ups[idx_curr_date:],color=color_ups, alpha=0.1)
-    #ax1.plot([spot,spot],[0,max(test)],'k-', color ='grey')
-    ax00.set_ylabel('mean(Karma)', color=color_ups)
-    ax00.tick_params('y', colors=color_ups)
-    #ax00.yaxis.set_major_locator(mticker.MultipleLocator(5000))
-    ax00.xaxis.set_major_locator(mdates.HourLocator())
-    ax00.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M\n%d %b"))
-    ax01 = ax00.twinx()
-    ax01.plot(tl_dates[:idx_curr_date+1],tl_coms[:idx_curr_date+1],color=color_coms)
-    ax01.plot(tl_dates[idx_curr_date:],tl_coms[idx_curr_date:],color=color_coms, alpha=0.1)
-    ax01.set_ylabel('mean(comments)', color=color_coms)
-    ax01.tick_params('y', colors=color_coms)
-    #ax01.yaxis.set_major_locator(mticker.MultipleLocator(100))
-    ax01.xaxis.set_major_locator(mdates.HourLocator())
-    ax01.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+    if timeline:
+        color_ups = '#549ED6'
+        color_coms = '#33cc33'
+        ax00 = plt.subplot(gs[0,:])
+        tl_ups = timeline['ups']
+        tl_coms = timeline['coms']
+        tl_dates = timeline['dates']
+        curr_date = datetime.strptime(data['timestamp'],"%b %d %Y %H:%M:%S")
+        idx_curr_date = tl_dates.index(curr_date)
+        ax00.plot(tl_dates[:idx_curr_date+1],tl_ups[:idx_curr_date+1],color=color_ups)
+        ax00.plot(tl_dates[idx_curr_date:],tl_ups[idx_curr_date:],color=color_ups, alpha=0.1)
+        ax00.set_ylabel('mean(Karma)', color=color_ups)
+        ax00.tick_params('y', colors=color_ups)
+        ax01 = ax00.twinx()
+        ax01.plot(tl_dates[:idx_curr_date+1],tl_coms[:idx_curr_date+1],color=color_coms)
+        ax01.plot(tl_dates[idx_curr_date:],tl_coms[idx_curr_date:],color=color_coms, alpha=0.1)
+        ax01.set_ylabel('mean(Comments)', color=color_coms)
+        ax01.tick_params('y', colors=color_coms)
+        ax01.xaxis.set_major_locator(mdates.HourLocator())
+        ax01.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+    else: #if no timeline, when plot_data is used on a single data point, fill
+          #the empty space with a title.
+          #TODO: improve that part to make better use of the space...
+        ax00 = plt.subplot(gs[0,:])
+        ax00.axis('off')
+        text_title = 'r/' + data['sub'] + ' - ' + data['timestamp']
+        ax00.text(0.4,0.5,text_title,fontsize=16, fontweight='bold')
 
     #left side of the plot, where the karma is plotted
     ax10 = plt.subplot(gs[1,0])
     if maxups:
         ax10.set_xlim(0, maxups)
     ax10.yaxis.set_major_locator(mticker.MultipleLocator(base=1.0))
-    ax10.barh(rge,ups, color = cmapage)
+    ax10.barh(list_yticks,ups, color = cmapage)
     ax10.invert_xaxis()
     ax10.invert_yaxis()
     ax10.set_xlabel('Karma')
@@ -130,18 +134,21 @@ def plot_chart(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sh
     ax12 = plt.subplot(gs[1,2], sharey=ax10)
     if maxcoms:
         ax12.set_xlim(0,maxcoms)
-    ax12.barh(rge,coms, color = cmapage)
+    ax12.barh(list_yticks,coms, color = cmapage)
     ax12.set_xlabel('Comments')
     plt.setp(ax12.get_yticklabels(), visible=False)
     ax12.xaxis.set_label_position('bottom')
     ax12.xaxis.tick_bottom()
     ax12.xaxis.grid(color='grey', linestyle='-', linewidth=0.5, alpha=0.5)
 
+    #colormap legend
     ax13 = plt.subplot(gs[1,3])
     cbar = plt.colorbar(sm, cax = ax13)
     cbar.set_label('age in minutes')
+    cbar.locator = mticker.MultipleLocator(base=60)
+    cbar.update_ticks()
+
     plt.tight_layout()
-    #plt.savefig('plots/'+filename, bbox_inches='tight')
     plt.savefig('plots/'+filename)
     if show: plt.show()
     plt.close()
@@ -171,15 +178,19 @@ def plot_collec(data_collec,maxups=None, maxage=None,maxcoms=None):
     n=1
     for data in data_collec:
         filename = str(n).zfill(nbr_zfill)+'.png'
-        plot_chart(data,filename=filename,maxups=maxups, maxage=maxage,maxcoms=maxcoms,show=False, timeline = timeline)
+        plot_data(data,filename=filename,maxups=maxups, maxage=maxage,maxcoms=maxcoms,show=False, timeline = timeline)
         n+=1
 
 if __name__ == '__main__':
     import json
     import hotcollect
-    if True:
+    if False:
         with open('test.json') as j:
             data_collec = json.load(j)
         for data in data_collec:
             data = hotcollect.offset_timestamp(data, -7)
         plot_collec(data_collec)
+    if True:
+        with open('test.json') as j:
+            data_collec = json.load(j)
+        plot_data(data_collec[0])
