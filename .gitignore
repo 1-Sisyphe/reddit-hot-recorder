@@ -2,7 +2,7 @@
 __pycache__/
 .ipynb_checkpoints/
 reddit_credentials.json
-thumbs/*
+thumbnails/*
 plots/[0-9]*
 *.mp4
 *.json

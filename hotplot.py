@@ -182,15 +182,4 @@ def plot_collec(data_collec,maxups=None, maxage=None,maxcoms=None):
         n+=1
 
 if __name__ == '__main__':
-    import json
-    import hotcollect
-    if False:
-        with open('test.json') as j:
-            data_collec = json.load(j)
-        for data in data_collec:
-            data = hotcollect.offset_timestamp(data, -7)
-        plot_collec(data_collec)
-    if True:
-        with open('test.json') as j:
-            data_collec = json.load(j)
-        plot_data(data_collec[0])
+    pass
