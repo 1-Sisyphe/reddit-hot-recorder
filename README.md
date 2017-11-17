@@ -54,4 +54,5 @@ plot_collec(data_collec)
 ### And finally:
 - feel free to comment my code, declare issues, propose changes, etc.  
 It was a learning exercise for me, both on Python and on using GitHub.  
-- it's under MIT licence which mean that you can do whatever you want with it, if I understood correctly. Don't do evil though, if ever you find a way to do evil things with it...  
+- it's under MIT licence which mean that you can do whatever you want with it, if I understood correctly.  
+Don't do evil though, if ever you find a way to do evil things with it...  
