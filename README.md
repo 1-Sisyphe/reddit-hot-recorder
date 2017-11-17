@@ -21,7 +21,7 @@ Here is a result, after recording xx hours of activity on the top of r/all:
 from hotcollect import collect_data
 from hotplot import plot_collec
 data_collec = collect_data(sub='france',maxposts=10,interval_sec=30,
-duration_min=5,feedback=True,savefile='france.json')
+                           duration_min=5,feedback=True,savefile='france.json')
 plot_collec(data_collec)
 ```
 - This script will watch the top 10 posts of r/france during 5 minutes, every 30 seconds.  
