@@ -25,7 +25,7 @@ data_collec = collect_data(sub='france',maxposts=10,interval_sec=30,
 plot_collec(data_collec)
 ```
 - This script will watch the top 10 posts of r/france during 5 minutes, every 30 seconds.  
-*note: You should not go bellow `interval_sec=10` as it takes a couple of seconds for the API to collect the data.*  
+*note: You should not go below `interval_sec=10` as it takes a couple of seconds for the API to collect the data.*  
 - It will save the collected data in france.json.  
 - It will print the following feedback:  
 ```shell
@@ -54,4 +54,4 @@ plot_collec(data_collec)
 ### And finally:
 - feel free to comment my code, declare issues, propose changes, etc.  
 It was a learning exercise for me, both on Python and on using GitHub.  
-- it's under MIT licence which mean that you can do whatever you want with it, if I understood correctly.  
+- it's under MIT licence which mean that you can do whatever you want with it, if I understood correctly. Don't do evil though, if ever you find a way to do evil things with it...  
