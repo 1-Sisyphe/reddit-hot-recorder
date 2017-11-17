@@ -4,7 +4,8 @@
 - My first published python project :)
 - A script that collects metadata from a Reddit's subreddit hot section, at regular intervals, and turns it into a serie of charts, to be animated.
 
-Here is a result, after recording xx hours of activity on the top of r/all:
+Here is a result, after recording 24 hours of activity on the top of r/all:  
+`Soon to come...`
 
 ### How does it work?
 - The hotcollect module takes care of collecting the data and can save it into a json.  
