@@ -4,7 +4,8 @@
 - My first published python project :)
 - A script that collects metadata from a Reddit's subreddit hot section, at regular intervals, and turns it into a serie of charts, to be animated.
 
-Here is a result, after recording xx hours of activity on the top of r/all:
+Here is a result, after recording 24 hours of activity on the top of r/all:  
+`Soon to come...`
 
 ### How does it work?
 - The hotcollect module takes care of collecting the data and can save it into a json.  
@@ -21,11 +22,11 @@ Here is a result, after recording xx hours of activity on the top of r/all:
 from hotcollect import collect_data
 from hotplot import plot_collec
 data_collec = collect_data(sub='france',maxposts=10,interval_sec=30,
-duration_min=5,feedback=True,savefile='france.json')
+                           duration_min=5,feedback=True,savefile='france.json')
 plot_collec(data_collec)
 ```
 - This script will watch the top 10 posts of r/france during 5 minutes, every 30 seconds.  
-*note: You should not go bellow `interval_sec=10` as it takes a couple of seconds for the API to collect the data.*  
+*note: You should not go below `interval_sec=10` as it takes a couple of seconds for the API to collect the data.*  
 - It will save the collected data in france.json.  
 - It will print the following feedback:  
 ```shell
@@ -55,3 +56,4 @@ plot_collec(data_collec)
 - feel free to comment my code, declare issues, propose changes, etc.  
 It was a learning exercise for me, both on Python and on using GitHub.  
 - it's under MIT licence which mean that you can do whatever you want with it, if I understood correctly.  
+Don't do evil though, if ever you find a way to do evil things with it...  
