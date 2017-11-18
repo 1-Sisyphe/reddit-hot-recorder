@@ -58,26 +58,27 @@ def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sho
         ax.spines['bottom'].set_visible(False)
 
     imgheight = 48 #crop images at 50px high (108px width by default)
-    limit_title_len = 65 #max nbr of characters in displayed title
+    limit_title_len = 60 #max nbr of characters in displayed title
     figsize = (18,10)
     ups = data['ups']
     coms = data['coms']
     thumbs = data['thumbs']
-    ages = data['ages']
+    ages = [age/60 for age in data['ages']]
     titles = data['titles']
     subs = data['subs']
     if not maxage:
         maxage = max(ages)
+    maxage = maxage/60
     cmapage, sm = make_colormap_age(maxage=maxage,ages=ages)
     maxposts = len(ups)
     list_yticks = list(range(1,maxposts+1))
 
     #initiate plot
     plt.rcdefaults()
-    matplotlib.rcParams.update({'font.size': 13})
+    matplotlib.rcParams.update({'font.size': 15})
     plt.yticks(list_yticks)
     fig = plt.figure(figsize = figsize)
-    gs = gridspec.GridSpec(2, 5, width_ratios=[0.3,1.5,0.3,1.5,0.1], height_ratios=[1,5])
+    gs = gridspec.GridSpec(2, 5, width_ratios=[0.2,1.5,0.3,1.5,0.05], height_ratios=[1,5])
     #Grid is 2 rows * 4 columns
     #Top row is for the timeline
     #Bottom row is for karma bars / thumbnails / comments bars / colormap legend
@@ -86,12 +87,12 @@ def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sho
     if timeline:
         color_ups = '#549ED6'
         color_coms = '#33cc33'
-        ax_tl = plt.subplot(gs[0,1:4])
+        ax_tl = plt.subplot(gs[0,1:5])
         rm_frames(ax_tl)
         ax_tl.spines['bottom'].set_visible(True)
         tl_ups = timeline['ups']
         tl_coms = timeline['coms']
-        tl_ages = timeline['ages']
+        tl_ages = [age/60 for age in timeline['ages']]
         tl_dates = timeline['dates']
         curr_date = datetime.strptime(data['timestamp'],"%b %d %Y %H:%M:%S")
         idx_curr_date = tl_dates.index(curr_date)
@@ -105,7 +106,8 @@ def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sho
         rm_frames(ax_tltwin)
         ax_tltwin.plot(tl_dates[:idx_curr_date+1],tl_ages[:idx_curr_date+1],color=color_coms)
         ax_tltwin.plot(tl_dates[idx_curr_date:],tl_ages[idx_curr_date:],color=color_coms, alpha=0.1)
-        ax_tltwin.set_ylabel('mean(ages in min)', color=color_coms)
+        ax_tltwin.set_ylabel('mean(ages in hour)', color=color_coms)
+        ax_tltwin.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.1f'))
         ax_tltwin.tick_params('y', colors=color_coms)
         ax_tltwin.yaxis.set_major_locator(mticker.LinearLocator(3))
         #ax_tltwin.xaxis.set_major_locator(mdates.HourLocator())
@@ -135,7 +137,7 @@ def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sho
     for n in range(len(titles)):
         title = format_title(titles[n],subs[n],data['sub'],limit_title_len)
         title_pos = ax_ups.get_xlim()[0]
-        ax_ups.text(title_pos,n+1,' '+title)
+        ax_ups.text(title_pos,n+1,' '+title, verticalalignment='center')
 
     #center of the plot, for pictures
     ax_thumbs = plt.subplot(gs[1,2], sharey=ax_ups)
@@ -162,11 +164,8 @@ def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sho
     #colormap legend
     ax_cbar = plt.subplot(gs[1,4])
     cbar = plt.colorbar(sm, cax = ax_cbar)
-    cbar.set_label('age in minutes')
-    cbar.locator = mticker.MultipleLocator(base=60)
-    cbar.update_ticks()
+    cbar.set_label('age in hours')
     plt.subplots_adjust(wspace=0.05, hspace=0.2)
-    #plt.tight_layout(w_pad=0)
     plt.savefig('plots/'+filename, bbox_inches='tight')
     if show: plt.show()
     plt.close()
