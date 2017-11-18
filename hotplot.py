@@ -1,3 +1,9 @@
+import os
+import matplotlib
+#Allow headless use
+if os.environ.get('DISPLAY') is None:
+    print("Falling back to Agg engine")
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.colors
 import matplotlib.image
@@ -166,6 +172,9 @@ def plot_data(data, filename='plot.png',maxups=None,maxcoms=None,maxage=None,sho
     cbar = plt.colorbar(sm, cax = ax_cbar)
     cbar.set_label('age in hours')
     plt.subplots_adjust(wspace=0.05, hspace=0.2)
+    #Check existence of plots directory
+    if not os.path.exists("plots/"):
+        os.makedirs("plots/")
     plt.savefig('plots/'+filename, bbox_inches='tight')
     if show: plt.show()
     plt.close()
